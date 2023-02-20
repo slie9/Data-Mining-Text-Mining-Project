@@ -27,13 +27,13 @@ To see how each character in Genshin Impact could possibly stack up against each
 
 ## Methods
 
-Why do you use this method?
+**Why do you use this method?**
 
 We wanted to see how much people spend on their favorite “gacha” games on hard-to-obtain content​. To do that, we first need to see how much they make in both the past 30 days and in its lifetime. We did research into all the games as well as pulling datasets from a fan made sites.
 
 For the Tweet analysis, we used this method as it was easiest for us to use within R. We researched about different packages and methods for this and found this the most reproducible for us. With the use of a Twitter Developer account, we were able to scrap live tweets and clean the data for use.
 
-How do you apply this method?
+**How do you apply this method?**
 
 Using the method of pulling data from fan made sites was the only way we were able to find any concrete data for the project. Unfortunately, most datasets online pertain to character or weapon statistics on finding what is the best character or weapon, rather than revenue based. If there was one found, it was the same as what we already decided to do. We compiled all the relevant information in different excel books so we could create charts that could showcase differences.
 
