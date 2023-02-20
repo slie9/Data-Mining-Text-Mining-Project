@@ -1,0 +1,292 @@
+---
+title: "DMTM Gacha Games Twitter Analysis"
+output: html_notebook
+---
+
+```{r}
+## load rtweet package
+
+library("rtweet")
+library("tidyverse")
+library("httpuv")
+library("ggplot2")
+library("dplyr")
+library("tm")
+library("wordcloud2")
+library("tidyr")
+library("tidytext")
+```
+
+
+```{r}
+auth_setup_default()
+```
+```{r}
+GI <- search_tweets("#GenshinImpact", n = 5000, lang = "en", include_rts = FALSE)
+View(GI)
+```
+
+```{r}
+Revenue <- search_tweets("Genshin Revenue", n = 5000, lang = "en", include_rts = FALSE)
+View(Revenue)
+```
+
+```{r}
+Gacha <- search_tweets("Gacha Games", n = 5000, lang = "en", include_rts = FALSE)
+View(Gacha)
+```
+
+
+```{r}
+head(GI$text)
+```
+
+```{r}
+head(Revenue$text)
+```
+```{r}
+head(Gacha$text)
+```
+
+
+```{r}
+# remove http elements manually
+GI$stripped_text <- gsub("http.*","",  GI$text)
+GI$stripped_text <- gsub("https.*","", GI$stripped_text)
+
+Revenue$stripped_text <- gsub("http.*","",  Revenue$text)
+Revenue$stripped_text <- gsub("https.*","", Revenue$stripped_text)
+
+Gacha$stripped_text <- gsub("http.*","",  Gacha$text)
+Gacha$stripped_text <- gsub("https.*","", Gacha$stripped_text)
+
+```
+
+```{r}
+# note the words that are recognized as unique by R
+a_list_of_words <- c("Genshin", "genshin", "genshin impact", "Genshin Impact", "gi", "games", "game", ",")
+unique(a_list_of_words)
+
+```
+```{r}
+# remove punctuation, convert to lowercase, add id for each tweet!
+GI_clean <- GI %>%
+  dplyr::select(stripped_text) %>%
+  unnest_tokens(word, stripped_text)
+```
+
+```{r}
+# remove punctuation, convert to lowercase, add id for each tweet!
+Revenue_clean <-Revenue %>%
+  dplyr::select(stripped_text) %>%
+  unnest_tokens(word, stripped_text)
+```
+
+```{r}
+
+# remove punctuation, convert to lowercase, add id for each tweet!
+Gacha_clean <-Gacha %>%
+  dplyr::select(stripped_text) %>%
+  unnest_tokens(word, stripped_text)
+```
+
+
+```{r}
+data("stop_words")
+head(stop_words)
+```
+
+```{r}
+nrow(GI_clean)
+nrow(Revenue_clean)
+nrow(Gacha_clean)
+```
+
+```{r}
+
+# remove stop words from your list of words
+GI_stopwords <- GI_clean %>%
+  anti_join(stop_words)
+
+# there should be fewer words now
+nrow(GI_stopwords)
+
+```
+
+```{r}
+
+Revenue_stopwords <- Revenue_clean %>%
+  anti_join(stop_words)
+
+# there should be fewer words now
+nrow(Revenue_stopwords)
+```
+
+```{r}
+Gacha_stopwords <- Gacha_clean %>%
+  anti_join(stop_words)
+
+# there should be fewer words now
+nrow(Gacha_stopwords)
+```
+
+
+```{r}
+# plot the top 15 words 
+GI_stopwords %>%
+  count(word, sort = TRUE) %>%
+  top_n(15) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(x = word, y = n)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+      labs(x = "Count",
+      y = "Unique words",
+      title = "Count of unique words found in #GenshinImpact tweets")
+```
+
+```{r}
+# plot the top 15 words 
+Revenue_stopwords %>%
+  count(word, sort = TRUE) %>%
+  top_n(15) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(x = word, y = n)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+      labs(x = "Count",
+      y = "Unique words",
+      title = "Count of unique words found in Genshin Revenue tweets")
+```
+
+```{r}
+# plot the top 15 words 
+Gacha_stopwords %>%
+  count(word, sort = TRUE) %>%
+  top_n(15) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(x = word, y = n)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+      labs(x = "Count",
+      y = "Unique words",
+      title = "Count of unique words found in Gacha Game tweets")
+```
+
+Words that occur together in tweets
+```{r}
+#library(devtools)
+#install_github("dgrtwo/widyr")
+#library(widyr)
+# Genshin Impact
+# remove punctuation, convert to lowercase, add id for each tweet!
+GI_paired_words <- GI %>%
+  dplyr::select(stripped_text) %>%
+  unnest_tokens(paired_words, stripped_text, token = "ngrams", n = 2)
+
+GI_paired_words %>%
+  count(paired_words, sort = TRUE)
+```
+
+```{r}
+#Revenue
+Revenue_paired_words <- Revenue %>%
+  dplyr::select(stripped_text) %>%
+  unnest_tokens(paired_words, stripped_text, token = "ngrams", n = 2)
+
+Revenue_paired_words %>%
+  count(paired_words, sort = TRUE)
+```
+
+
+```{r}
+#Gacha
+Gacha_paired_words <- Gacha %>%
+  dplyr::select(stripped_text) %>%
+  unnest_tokens(paired_words, stripped_text, token = "ngrams", n = 2)
+
+Gacha_paired_words %>%
+  count(paired_words, sort = TRUE)
+```
+
+```{r}
+library(tidyr)
+GI_separated_words <- GI_paired_words %>%
+  separate(paired_words, c("word1", "word2"), sep = " ")
+
+GI_filtered <- GI_separated_words %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
+
+# new bigram counts:
+GI_words_counts <- GI_filtered %>%
+  count(word1, word2, sort = TRUE)
+```
+
+
+```{r}
+#revenue
+Revenue_separated_words <- Revenue_paired_words %>%
+  separate(paired_words, c("word1", "word2"), sep = " ")
+
+Revenue_filtered <- Revenue_separated_words %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
+
+# new bigram counts:
+Revenue_words_counts <- Revenue_filtered %>%
+  count(word1, word2, sort = TRUE)
+```
+
+```{r}
+#Gacha
+Gacha_separated_words <- Gacha_paired_words %>%
+  separate(paired_words, c("word1", "word2"), sep = " ")
+
+Gacha_filtered <- Gacha_separated_words %>%
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word)
+
+# new bigram counts:
+Gacha_words_counts <- Gacha_filtered %>%
+  count(word1, word2, sort = TRUE)
+```
+
+```{r}
+
+# (plotting graph edges is currently broken)
+GI_words_counts %>%
+        filter(n >= 24) %>%
+        graph_from_data_frame() %>%
+        ggraph(layout = "fr") +
+       
+        geom_node_point(color = "darkslategray4", size = 3) +
+        geom_node_text(aes(label = name), vjust = 1.8, size = 3) +
+        labs(title = "Word Network: Tweets using the hashtag - #GenshinImpact",
+             subtitle = "Text mining twitter data ",
+             x = "", y = "")
+```
+```{r}
+library(wordcloud)
+library(RColorBrewer)
+```
+
+```{r}
+wordcloud(GI_stopwords, max.words=75, 
+           random.order=FALSE,colors=brewer.pal(8,"Dark2"))
+```
+
+```{r}
+wordcloud(Revenue_stopwords, max.words=75, 
+           random.order=FALSE, rot.per=0.35,colors=brewer.pal(8,"Dark2"))
+```
+
+```{r}
+wordcloud(Gacha_stopwords, max.words=75, 
+           random.order=FALSE, rot.per=0.35,colors=brewer.pal(8,"Dark2"))
+```
+
+
